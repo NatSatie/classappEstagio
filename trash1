@@ -1,0 +1,55 @@
+const fs = require('fs');
+const stream = fs.createReadStream('input.csv');
+// Load the full build.
+var _ = require('lodash');
+// Load the core build.
+var _ = require('lodash/core');
+// Load the FP build for immutable auto-curried iteratee-first data-last methods.
+var fp = require('lodash/fp');
+ 
+// Load method categories.
+var array = require('lodash/array');
+var object = require('lodash/fp/object');
+ 
+// Cherry-pick methods for smaller browserify/rollup/webpack bundles.
+var at = require('lodash/at');
+var curryN = require('lodash/fp/curryN');
+
+var PNF = require('google-libphonenumber').PhoneNumberFormat;
+
+function rmvExtraCommas(txt, begin){
+  console.log("REMOVER COMMAS")
+  var res
+  for(i=begin; i<txt.length;i++){
+    if (txt.charAt(i) == ","){
+      txt[i] = "F"
+    }
+  } res = txt.replace(new RegExp(String.fromCharCode(34), 'g'), "")
+  console.log(res)
+  return res
+}
+
+function readData(data){
+  //String.fromCharCode(34)
+  var temp = data.split("\n")
+  for(i=0;i<temp.length;i++){
+    var aspas=temp[i].search(/[""]/) 
+    if (aspas!=-1){
+      var list = rmvExtraCommas(temp[i], aspas)
+      console.log(list)
+    }
+  }
+  console.log(temp)
+}
+
+function main(){
+  fs.readFile('input.csv', 'utf8' , (err, data) => {
+    if (err) {
+      console.error(err)
+      return
+    }
+    readData(data)
+  })
+}
+
+main()

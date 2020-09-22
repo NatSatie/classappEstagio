@@ -1,0 +1,102 @@
+const fs = require('fs');
+const stream = fs.createReadStream('input.csv');
+// Load the full build.
+var _ = require('lodash');
+// Load the core build.
+var _ = require('lodash/core');
+// Load the FP build for immutable auto-curried iteratee-first data-last methods.
+var fp = require('lodash/fp');
+ 
+// Load method categories.
+var array = require('lodash/array');
+var object = require('lodash/fp/object');
+ 
+// Cherry-pick methods for smaller browserify/rollup/webpack bundles.
+var at = require('lodash/at');
+var curryN = require('lodash/fp/curryN');
+
+var PNF = require('google-libphonenumber').PhoneNumberFormat;
+
+
+function getClasses(student){
+  var classes = []
+  for(i=2; i < student.length; i++){
+    if (student[i].search("Sala") != -1){
+      if (student[i].search("/") != -1){
+        var splitClasses = student[i].split('/')
+        for(i=0; i < splitClasses.length; i++)
+          classes.push(splitClasses[i])
+      } else {
+        classes.push(student[i])
+      }
+    }
+  }
+  //TODO: limpar texto
+  return classes
+}
+
+function getAddresses(student){
+  
+  for(i=2; i < student.length; i++){
+    if ((student[i].search("@") != -1) && (student[i].search(".com") != -1)){
+      console.log(student[i])
+      console.log("email 1!")
+      break
+    }
+  }
+}
+
+function Address(){
+  this.type = null
+  this.tags = []
+  this.address = null
+}
+
+function Student(){
+  this.fullname = null,
+  this.eip = null
+  this.classes = null
+  this.addresses = []
+  this.invisible = null
+  this.see_all=null
+}
+
+function Student(fullname, eip, classes, addresses, invisible, see_all){
+  this.fullname = fullname
+  this.eip = eip
+  this.classes = classes
+  this.addresses = addresses
+  this.invisible = invisible
+  this.see_all = see_all
+}
+
+function addStudent(student, data){
+  var fullname = student[0]
+  var eip = student[1]
+  var classes = getClasses(student)
+  var addresses = getAddresses(student)
+
+  return data
+}
+
+function readData(data){
+  var studentsData = data.split("\n")
+  //remove the first line
+  studentsData.shift()
+  var answer = []
+  console.log(studentsData)
+  while(studentsData.length != 0){
+    var student = studentsData[0].split(',')
+    answer = addStudent(student, answer)
+    studentsData.shift()
+  } 
+}
+
+
+fs.readFile('input.csv', 'utf8' , (err, data) => {
+  if (err) {
+    console.error(err)
+    return
+  }
+  readData(data)
+})

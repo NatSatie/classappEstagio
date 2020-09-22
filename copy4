@@ -1,0 +1,214 @@
+'use strict'
+const fs = require('fs')
+const neatCsv = require('neat-csv')
+const PNF = require("google-libphonenumber").PhoneNumberFormat;
+const phoneUtil = require("google-libphonenumber").PhoneNumberUtil.getInstance();
+
+function checkDuplicate(studentData, name, eid){
+  for(var i=0;i<studentData.length;i++){
+    var studentName = studentData[i].fullname
+    var studentEid = studentData[i].eid
+    if ((studentName == name)&&(studentEid == eid)){
+      //console.log("****EXISTE UM ESTUDANTE NESSA LISTA****")
+      return true
+    }
+  } return false
+}
+
+function rmvBadCharacters(str){
+  var temp1 = str.replace(new RegExp(':', 'g'), "")
+  var temp2 = temp1.replace(new RegExp(/[()]/, 'g'), "")
+  //var temp2 = temp1.replace(new RegExp(' ', 'g'), "")
+  //console.log(temp2)
+  return temp2
+}
+
+function splitStrings(array){
+  var splited = []
+  if (Array.isArray(array)){
+    for(var i=0;i<array.length;i++){
+      var temp = array[i]
+      if ((temp.includes(',') || (temp.includes('/')) )!= -1){
+        splited = temp.split(/[,/:]/)
+      }
+    }
+  } else {
+    if ((array.includes(',') || (array.includes('/')) )!= -1){
+      splited = array.split(/[,/]/)
+    }
+  }
+  for(i=0;i<splited.length;i++){
+    splited[i].trim()
+    if (splited[i] == ''){
+      splited.splice(i)
+    }
+  }
+  return splited
+}
+
+function getStudentClasses(classes){
+  //console.log("FUNÇÃO: getStudentClasses()")
+  //console.log(classes)
+  var newClasses = splitStrings(classes)
+  //console.log(newClasses)
+  return newClasses
+}
+
+function getPropAsString(info){
+  var strList = []
+  for( var i in info){
+    //console.log(i.toString())
+    strList.push( i.toString() )
+  } //console.log("STR LIST:")
+  //console.log(strList)
+  return strList
+}
+
+function isValidEmail(email){
+  if ((email.search(".com") != -1) && (email.search("@") != -1) )
+    return true
+  return false
+}
+
+function isValidPhone(phone){
+  //console.log("+++++++IS VALID PHONE+++++++++")
+  //console.log(phone)
+  try {
+    var res = phoneUtil.isValidNumberForRegion(phoneUtil.parse(phone, 'BR'), 'BR')
+    //console.log( res)
+    return res
+  } catch(err){
+    return false
+  } return false 
+}
+
+function getStudentAddresses(info, propNames){
+  //console.log("FUNÇÃO: getStudentAddresses()")
+  var newAddresses = []
+
+  for(var i=3;i<propNames.length-2;i++){
+    var contact = rmvBadCharacters(info[propNames[i].toString()])
+    //console.log("%%CONTATO APOS TRATAMENTO %: " + contact)
+    if (contact != ''){
+      var mainTags = propNames[i].split(" ")
+      //console.log(mainTags)
+      if (( mainTags[0] == "email") && (isValidEmail(contact)) ) {
+        //console.log("EMAIL VÁLIDO")
+        var addressContact = {
+          type: null,
+          tags: [],
+          address: null
+        }
+
+        addressContact.type = mainTags[0]
+        for(var j=1; j < mainTags.length; j++){
+          addressContact.tags.push(mainTags[j])
+        } addressContact.address = contact
+        newAddresses.push(addressContact)
+      } else  if (( mainTags[0] == "phone") && (isValidPhone(contact)) ){
+        //console.log("PHONE VÁLIDO")
+        var addressContact = {
+          type: null,
+          tags: [],
+          address: null
+        }
+        addressContact.type = mainTags[0]
+        for(var j=1; j < mainTags.length; j++){
+          addressContact.tags.push(mainTags[j])
+        } addressContact.address = contact
+        newAddresses.push(addressContact)
+      }
+    }
+  }
+  //console.log(newAddresses)
+  return newAddresses
+}
+
+function makeBoolean(str){
+  if ((str=='0')||(str=='no'))
+    return false
+  else if ((str=='1')||(str=='yes'))
+    return true
+  else if (str=='')
+    return null
+}
+
+function createNewStudent(info, propNames){
+  //console.log("FUNÇÃO: createNewStudent()")
+  //console.log(info)
+  var newStudent = {
+    fullname: null,
+    eid: null,
+    class: [],
+    addresses: [],
+    invisible: null,
+    see_all: null
+  }
+  newStudent.fullname = info.fullname
+  newStudent.eid = info.eid
+  newStudent.class = getStudentClasses(info.class)
+  newStudent.addresses = getStudentAddresses(info, propNames)
+  newStudent.invisible = makeBoolean(info.invisible)
+  newStudent.see_all = makeBoolean(info.see_all)
+  return newStudent
+}
+
+function addNewInfo(info, toBeAdded, propNames){
+  var copy = {
+    fullname: null,
+    eid: null,
+    class: [],
+    addresses: [],
+    invisible: null,
+    see_all: null
+  }
+  console.log("$$$$$$$$$$$$$$$$$$$")
+  copy.fullname = info.fullname
+  copy.eid = info.eid
+  var classAdd = []
+  for(var i in info.class)
+    classAdd.push(i)
+  var extraClasses = getStudentClasses(toBeAdded.class)
+  for(var i in extraClasses)
+    classAdd.push(i)
+  console.log(copy)
+}  
+
+async function readData(info){
+  var studentData = []
+  //console.log("*****************")
+  //console.log(info)
+  console.log("*****************")
+  var propNames = getPropAsString(info[0])
+  for (var i=0;i<info.length;i++){
+    console.log("INDEX PRESENTE: " + i)
+    var aux = info[i]
+    var name = info[i].fullname
+    var eid = info[i].eid
+    if ( !checkDuplicate(studentData, name, eid) ){
+      var newStudent = createNewStudent(aux, propNames)
+      studentData.push(newStudent)
+    } else {
+      console.log("ALUNO REPETIDO: ")
+      var changeStudent = addNewInfo(studentData, aux, propNames)  
+    }
+  }
+  return studentData
+}
+
+function main(){
+  fs.readFile('./input.csv', async (err, data) => {
+    if (err) {
+      console.error(err)
+      return
+    }
+    var studentData = readData(await neatCsv(data))
+    console.log("&&&&&&&&&&&&&&&&&&&&&")
+    console.log(studentData )
+    let database = JSON.stringify(studentData, null, 2);
+    fs.writeFileSync('output.json', database);
+  })
+  
+}
+
+main()

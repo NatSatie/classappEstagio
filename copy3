@@ -1,0 +1,88 @@
+'use strict'
+const fs = require('fs')
+const neatCsv = require('neat-csv')
+
+function ContactAddress(){
+  this.type = null
+  this.tags = []
+  this.address = null
+}
+
+function Student(){
+  this.fullname = null
+  this.eid = null
+  this.classes = []
+  this.addresses = []
+}
+
+function Student(fullname, eid, classes, addresses){
+  this.fullname = fullname
+  this.eid = eid
+  this.classes = classes
+  this.addresses = addresses
+}
+
+
+function findDuplicate(info, index){
+  var listOfDuplicates = []
+  for(i=0;i<info.length;i++){
+    if (i != index){
+      if ( (info[i].fullname == info[index].fullname)&&( info[i].eid == info[index].eid) ){
+        listOfDuplicates.push(i)
+      }
+    }
+  }
+  console.log(info)
+  console.log(listOfDuplicates)
+  return listOfDuplicates
+}
+
+async function readData(info){
+  var studentData = []
+  info.forEach(
+    (student) => {
+      var index = info.indexOf(student)
+      var listOfDuplicates = []
+      for(var i=0;i<info.length;i++){
+        if (i != index){
+          if ( (info[i].fullname == info[index].fullname)&&( info[i].eid == info[index].eid) ){
+            listOfDuplicates.push(i)
+          }
+        }
+      }
+      if (listOfDuplicates.empty){
+        console.log("do something else")
+      } else {
+        console.log("lets add the contact")
+        console.log("Actual contact: ")
+        console.log(info[index])
+
+
+        for(var j=0;j<listOfDuplicates.length;j++){
+          console.log("duplicate: ")
+          console.log(info[listOfDuplicates[j]])
+          info.splice(listOfDuplicates[j])
+        }
+        console.log("AFTER REMOVAL")
+      } console.log(info)
+      studentData.push(info[index])
+      return 
+    }
+  ) console.log(studentData)
+  return studentData
+}
+
+function main(){
+  fs.readFile('./input.csv', async (err, data) => {
+    if (err) {
+      console.error(err)
+      return
+    }
+    var studentData = readData(await neatCsv(data))
+    //let database = JSON.stringify(studentDatabase, null, 2);
+    //fs.writeFileSync('output.json', database);
+  })
+  
+}
+
+main()

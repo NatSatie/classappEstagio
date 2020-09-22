@@ -1,0 +1,148 @@
+const fs = require('fs');
+const stream = fs.createReadStream('input.csv');
+// Load the full build.
+var _ = require('lodash');
+// Load the core build.
+var _ = require('lodash/core');
+// Load the FP build for immutable auto-curried iteratee-first data-last methods.
+var fp = require('lodash/fp');
+ 
+// Load method categories.
+var array = require('lodash/array');
+var object = require('lodash/fp/object');
+ 
+// Cherry-pick methods for smaller browserify/rollup/webpack bundles.
+var at = require('lodash/at');
+var curryN = require('lodash/fp/curryN');
+
+var PNF = require('google-libphonenumber').PhoneNumberFormat;
+
+function Address(){
+  this.type = ""
+  this.tags = []
+  this.address = ""
+}
+
+function Address(type, tags, address){
+  this.type = type
+  this.tags = tags
+  this.address = address
+}
+
+function removeExtraSpace(data){
+  var temp = data
+  for(i=0; i<temp.length;i++){
+    for(j=0;j<temp[i].length;j++){
+      var txt = temp[i][j]
+      if (txt.charAt(0) == ' ')
+        temp[i][j] = txt.replace(' ', '')
+    }
+  }
+  return temp
+}
+
+function removeBadCharacters(data){
+  var txt1 = data.replace(new RegExp(':', 'g'), "")
+  var txt2 = txt1.replace(new RegExp('/', 'g'), ",")
+  //remove aspas
+  var txt3 = txt2.replace(new RegExp(String.fromCharCode(34), 'g'), "") 
+  var txt4 = txt3.replace(new RegExp(/[()]/, 'g'), "")
+  var splited = txt4.split("\n")
+  var cleaned = []
+  for(i=0; i<splited.length; i++){
+    var temp = splited[i].split(",")
+    cleaned.push(temp)
+  }
+  //Limpar e dar os toques finais
+  cleaned = removeExtraSpace(cleaned)
+  //remover titulos da tabela
+  cleaned.shift()
+  return cleaned
+}
+
+function getClasses(info){
+  var classes = []
+  for(i=2;i<info.length; i++){
+    if (info[i].search("Sala") != -1){
+      classes.push(info[i])
+    }
+  } //console.log(classes)
+  return classes
+}
+
+function isPhone(phone){
+  return true
+}
+
+function isSala(sala){
+  if (sala.search("Sala") != -1)
+      return true
+  return false
+}
+
+function getAddresses(info){
+  var addresses = []
+  var emailConsecutivo = 0
+  var pai = false
+  var mae = false
+  var aluno = false
+  for(i=2;i<info.length;i++){
+    if (!isSala(info[i])){
+      console.log("email consecutivo: "+ emailConsecutivo)
+      if ((info[i].search(".com") != -1) && (info[i].search("@"))){
+        if (emailConsecutivo == 0){
+          if (!pai){
+            console.log("email do pai")
+            pai = true
+          } else if (!mae){
+            console.log("email da mae")
+            mae = true
+          } else {
+            console.log("email do aluno")
+            aluno = true
+          }
+          emailConsecutivo += 1
+        } else {
+          if (pai){
+            console.log("email do pai de novo")
+          } else if (mae){
+            console.log("email da mae de novo")
+          } else {
+            console.log("email do aluno de novo")
+          }
+        }
+      } else if (isPhone(info[i])){
+        console.log("maybe is a phone number")
+        emailConsecutivo = 0
+      }
+    }
+  } return addresses
+}
+
+function getStudent(info){
+  var fullname = info[0]
+  var eip = info[1]
+  var classes = getClasses(info)
+  var addresses = getAddresses(info)
+}
+
+function readData(data){
+  data = removeBadCharacters(data)
+  for(i=0;i<data.length;i++){
+    var student = getStudent(data[i])
+  }
+  
+  console.log(data)
+}
+
+function main(){
+  fs.readFile('input.csv', 'utf8' , (err, data) => {
+    if (err) {
+      console.error(err)
+      return
+    }
+    readData(data)
+  })
+}
+
+main()
